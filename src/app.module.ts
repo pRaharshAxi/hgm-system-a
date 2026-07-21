@@ -4,7 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import databaseConfig from './config/database.config';
 import { envValidationSchema } from './config/env.validation';
 import { AuthModule } from './modules/auth/auth.module';
-import { ListingsModule } from './modules/listings/listings.module'; // Add this import
+import { ListingsModule } from './modules/listings/listings.module';
+import { MessagingModule } from './messaging/messaging.module'; // 1. Import your messaging module
 
 @Module({
   imports: [
@@ -29,8 +30,11 @@ import { ListingsModule } from './modules/listings/listings.module'; // Add this
     // 3. Auth Module
     AuthModule,
 
-    // 4. Listings Module - Connect listings here
+    // 4. Listings Module
     ListingsModule,
+
+    // 5. Global Messaging Module - Enables RabbitMQ Event Publishing app-wide
+    MessagingModule,
   ],
   controllers: [],
   providers: [],
