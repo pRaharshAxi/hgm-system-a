@@ -5,35 +5,33 @@ import databaseConfig from './config/database.config';
 import { envValidationSchema } from './config/env.validation';
 import { AuthModule } from './modules/auth/auth.module';
 import { ListingsModule } from './modules/listings/listings.module';
-import { MessagingModule } from './messaging/messaging.module'; // 1. Import your messaging module
+import { MessagingModule } from './messaging/messaging.module';
+import { OrdersModule } from './modules/orders/orders.module'; // 👈 1. Import OrdersModule
 
 @Module({
   imports: [
-    // 1. Core Config Setup with Strict Joi Schema Validation
+    // 1. Core Config Setup
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig],
       validationSchema: envValidationSchema,
       validationOptions: {
-        allowUnknown: true, // Safeguards against built-in machine env injection
-        abortEarly: true,   // Instantly stops compilation on first failure
+        allowUnknown: true,
+        abortEarly: true,
       },
     }),
 
-    // 2. Asynchronous Async Injection for Database Connection
+    // 2. Database Connection
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) =>
         configService.get('database'),
     }),
 
-    // 3. Auth Module
+    // 3. Feature Modules
     AuthModule,
-
-    // 4. Listings Module
     ListingsModule,
-
-    // 5. Global Messaging Module - Enables RabbitMQ Event Publishing app-wide
+    OrdersModule, // 👈 2. Add OrdersModule here!
     MessagingModule,
   ],
   controllers: [],

@@ -13,7 +13,7 @@ export default registerAs(
     database: process.env.DB_NAME,
     entities: [User],
     autoLoadEntities: true, // <-- ADD THIS LINE HERE
-    synchronize: false, // Production safety target
+    synchronize: process.env.NODE_ENV !== 'production', // Production safety target
     migrations: ['dist/migrations/*{.ts,.js}'],
     logging: process.env.NODE_ENV === 'development',
   }),
