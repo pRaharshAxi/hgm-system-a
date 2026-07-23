@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ListingsModule } from './modules/listings/listings.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrdersModule } from './modules/orders/orders.module'; // 👈 1. Import OrdersModule
+import { ReviewsModule } from './modules/reviews/reviews.module'; // 👈 1. Import ReviewsModule
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { OrdersModule } from './modules/orders/orders.module'; // 👈 1. Import
     AuthModule,
     ListingsModule,
     OrdersModule, // 👈 2. Add OrdersModule here!
+    ReviewsModule,
     MessagingModule,
   ],
   controllers: [],
