@@ -1,13 +1,28 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ListingsService } from './listings.service';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
+import { AdminListingQueryDto } from './dto/admin-listing-query.dto';
 import { JwtAuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../auth/dto/register.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
+@ApiTags('Listings')
 @Controller('listings')
 export class ListingsController {
   constructor(private readonly listingsService: ListingsService) {}
@@ -35,6 +50,26 @@ export class ListingsController {
   async findMyListings(@CurrentUser() user: any) {
     return this.listingsService.findBySupplier(user.id);
   }
+
+  // --- ADMIN ENDPOINTS ---
+
+  @Get('admin')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async findAllAdmin(@Query() query: AdminListingQueryDto) {
+    return this.listingsService.findAllAdmin(query);
+  }
+
+  @Patch('admin/:id/disable')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async disableListing(@Param('id', ParseUUIDPipe) id: string) {
+    return this.listingsService.disableListing(id);
+  }
+
+  // -----------------------
 
   @Get()
   async findAll() {

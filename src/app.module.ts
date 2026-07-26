@@ -8,6 +8,8 @@ import { ListingsModule } from './modules/listings/listings.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrdersModule } from './modules/orders/orders.module'; // 👈 1. Import OrdersModule
 import { ReviewsModule } from './modules/reviews/reviews.module'; // 👈 1. Import ReviewsModule
+import { HealthModule } from './modules/health/health.module';
+import { UsersModule } from './modules/users/users.module'; // 👈 1. Import UsersModule
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { ReviewsModule } from './modules/reviews/reviews.module'; // 👈 1. Imp
     OrdersModule, // 👈 2. Add OrdersModule here!
     ReviewsModule,
     MessagingModule,
+    HealthModule,
+    UsersModule, // 👈 ADD THIS HERE!
   ],
   controllers: [],
   providers: [],

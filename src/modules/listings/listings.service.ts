@@ -6,6 +6,7 @@ import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
 import { S3UploadService } from './s3-upload.service';
 import { EventPublisherService } from '../../messaging/event-publisher.service'; // Make sure this path matches your file structure
+import { AdminListingQueryDto } from './dto/admin-listing-query.dto';
 
 @Injectable()
 export class ListingsService {
@@ -89,4 +90,44 @@ export class ListingsService {
   async getPresignedUrl(filename: string, contentType: string) {
     return this.s3UploadService.generateUploadPresignedUrl(filename, contentType);
   }
+
+  async findAllAdmin(query: AdminListingQueryDto) {
+    const { category, isActive, page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
+  
+    const qb = this.listingRepository.createQueryBuilder('listing');
+  
+    if (category) {
+      qb.andWhere('listing.category = :category', { category });
+    }
+  
+    if (isActive !== undefined) {
+      qb.andWhere('listing.isActive = :isActive', { isActive });
+    }
+  
+    qb.skip(skip).take(limit).orderBy('listing.createdAt', 'DESC');
+  
+    const [data, total] = await qb.getManyAndCount();
+  
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+  
+  async disableListing(id: string) {
+    const listing = await this.listingRepository.findOneBy({ id });
+    if (!listing) {
+      throw new NotFoundException('Listing not found');
+    }
+    listing.isActive = false;
+    return this.listingRepository.save(listing);
+  }
+
+
 }

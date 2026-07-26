@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -10,14 +11,19 @@ import {
   UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { AdminOrderQueryDto } from './dto/admin-order-query.dto';
+import { AdminUpdateOrderStatusDto } from './dto/admin-update-order-status.dto';
 import { JwtAuthGuard } from '../auth/auth.guard'; 
 import { RolesGuard } from '../auth/roles.guard'; 
 import { Roles } from '../../common/decorators/roles.decorator'; 
 import { UserRole } from '../users/user.entity';
 
+@ApiTags('Orders')
+@ApiBearerAuth()
 @Controller('orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class OrdersController {
@@ -28,6 +34,25 @@ export class OrdersController {
   async placeOrder(@Body() dto: CreateOrderDto, @Request() req: any) {
     return this.ordersService.placeOrder(dto, req.user.id);
   }
+
+  // --- ADMIN ENDPOINTS ---
+
+  @Get('admin')
+  @Roles(UserRole.ADMIN)
+  async findAllAdmin(@Query() query: AdminOrderQueryDto) {
+    return this.ordersService.findAllAdmin(query);
+  }
+
+  @Patch('admin/:id/status')
+  @Roles(UserRole.ADMIN)
+  async overrideStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AdminUpdateOrderStatusDto,
+  ) {
+    return this.ordersService.overrideStatus(id, dto.status);
+  }
+
+  // -----------------------
 
   @Get(':id')
   async findOne(@Param('id') id: string, @Request() req: any) {
