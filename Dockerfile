@@ -1,38 +1,40 @@
 # Stage 1: Builder
-FROM node:20.11.1-alpine AS builder
+FROM node:20.19.0-alpine AS builder
+
+# Install build tools required for native C++ modules
+RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-# Copy dependency definitions
 COPY package*.json ./
 
-# Install all dependencies (including devDependencies needed for build)
-RUN npm ci
+# Configure robust network settings to prevent ECONNRESET
+RUN npm config set fetch-retries 10 && \
+    npm config set fetch-retry-mintimeout 30000 && \
+    npm config set fetch-retry-maxtimeout 180000 && \
+    npm config set fetch-timeout 300000 && \
+    npm ci
 
-# Copy source files and assets needed for build
 COPY . .
 
-# Build the application
 RUN npm run build
+
+# Clean up devDependencies before copying to runner
+RUN npm prune --omit=dev
 
 
 # Stage 2: Runner
-FROM node:20.11.1-alpine AS runner
+FROM node:20.19.0-alpine AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy dependency definitions
-COPY package*.json ./
-
-# Install production-only dependencies
-RUN npm ci --only=production
-
-# Copy built application and migrations from builder
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/migrations ./migrations
 
 EXPOSE 3001
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
