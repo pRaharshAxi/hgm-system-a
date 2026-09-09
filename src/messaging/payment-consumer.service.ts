@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as amqp from 'amqplib';
-import { Order, OrderStatus } from '../modules/orders/order.entity';
+import { Order } from '../modules/orders/order.entity';
 
 @Injectable()
 export class PaymentConsumerService implements OnModuleInit, OnModuleDestroy {
@@ -10,59 +10,56 @@ export class PaymentConsumerService implements OnModuleInit, OnModuleDestroy {
   private connection: amqp.Connection;
   private channel: amqp.Channel;
 
-  private readonly exchange = 'hgm';
-  private readonly queue = 'payment.confirmed.sysA';
-  private readonly routingKey = 'payment.confirmed';
-
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
   ) {}
 
   async onModuleInit() {
-    await this.connectAndConsume();
+    await this.initConsumer();
   }
 
-  private async connectAndConsume() {
+  private async initConsumer() {
     try {
-      const rabbitUrl = process.env.RABBITMQ_URL || 'amqp://localhost:5672';
-      this.connection = await amqp.connect(rabbitUrl);
+      this.connection = await amqp.connect(process.env.RABBITMQ_URI || 'amqp://localhost');
       this.channel = await this.connection.createChannel();
 
-      // Assert Exchange, Queue, and Bind
-      await this.channel.assertExchange(this.exchange, 'topic', { durable: true });
-      await this.channel.assertQueue(this.queue, { durable: true });
-      await this.channel.bindQueue(this.queue, this.exchange, this.routingKey);
+      const exchangeName = 'hgm';
+      const queueName = 'payment.confirmed.sysA';
+      const routingKey = 'payment.confirmed';
 
-      this.logger.log(`Subscribed to queue: ${this.queue}`);
+      await this.channel.assertExchange(exchangeName, 'topic', { durable: true });
+      await this.channel.assertQueue(queueName, { durable: true });
+      await this.channel.bindQueue(queueName, exchangeName, routingKey);
 
-      // Consume Messages
-      await this.channel.consume(this.queue, async (msg) => {
+      await this.channel.prefetch(1);
+
+      this.logger.log(`Listening on queue ${queueName} for key ${routingKey}`);
+
+      this.channel.consume(queueName, async (msg) => {
         if (!msg) return;
 
         try {
           const content = JSON.parse(msg.content.toString());
-          this.logger.log(`Received payment event: ${JSON.stringify(content)}`);
+          this.logger.log(`Received payment.confirmed payload: ${JSON.stringify(content)}`);
 
-          const orderId = content.orderId;
+          const { orderId } = content;
+
           if (orderId) {
-            // Directly update order status to CONFIRMED (bypassing state machine)
-            await this.orderRepository.update(orderId, {
-              status: OrderStatus.CONFIRMED,
-            });
-            this.logger.log(`Order ${orderId} updated to CONFIRMED via Payment Consumer`);
+            // Update status bypassing the standard state machine checks
+            await this.orderRepository.update(orderId, { status: 'CONFIRMED' });
+            this.logger.log(`Order ${orderId} updated to CONFIRMED via Payment Consumer.`);
           }
 
-          // ACK on success
           this.channel.ack(msg);
         } catch (error) {
-          this.logger.error(`Error processing payment message: ${error.message}`);
-          // NACK + requeue on error
+          this.logger.error(`Error processing payment event: ${error.message}`, error.stack);
+          // Requeue message on failure
           this.channel.nack(msg, false, true);
         }
       });
-    } catch (error) {
-      this.logger.error(`Failed to connect to RabbitMQ consumer: ${error.message}`);
+    } catch (err) {
+      this.logger.error(`Failed to initialize RabbitMQ consumer: ${err.message}`);
     }
   }
 
