@@ -10,19 +10,16 @@ export class S3UploadService {
   private bucketName: string;
 
   constructor(private configService: ConfigService) {
-    const endpoint = this.configService.get<string>('MINIO_ENDPOINT');
-    const port = this.configService.get<number>('MINIO_PORT');
-
     this.s3Client = new S3Client({
-      region: 'us-east-1', // MinIO ignores AWS region definitions but requires fallback context
-      endpoint: `http://${endpoint}:${port}`,
+      region: 'us-east-1',
+      endpoint: 'http://localhost:9000',
       credentials: {
-        accessKeyId: this.configService.get<string>('MINIO_ROOT_USER') || 'hgm_admin',
-        secretAccessKey: this.configService.get<string>('MINIO_ROOT_PASSWORD') || 'hgm_admin_password',
+        accessKeyId: this.configService.get<string>('MINIO_ROOT_USER') || 'minioadmin',
+        secretAccessKey: this.configService.get<string>('MINIO_ROOT_PASSWORD') || 'minioadmin',
       },
-      forcePathStyle: true, // Necessary for local MinIO cluster routing paths
+      forcePathStyle: true,
     });
-    
+
     this.bucketName = this.configService.get<string>('MINIO_BUCKET_NAME') || 'hgm-images';
   }
 
@@ -37,7 +34,6 @@ export class S3UploadService {
         ContentType: contentType,
       });
 
-      // Valid for 15 minutes
       const presignedUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 900 });
 
       return {

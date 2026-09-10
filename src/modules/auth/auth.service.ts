@@ -17,7 +17,7 @@ export class AuthService {
 
   private async generateTokens(user: User) {
     const payload = { sub: user.id, email: user.email, role: user.role };
-    
+
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
       expiresIn: process.env.JWT_EXPIRES_IN || '15m',
@@ -29,6 +29,19 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  private formatUser(user: User) {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+      address: user.address,
+      averageRating: user.averageRating,
+      reviewCount: user.reviewCount,
+    };
   }
 
   async register(dto: RegisterDto) {
@@ -50,7 +63,12 @@ export class AuthService {
     });
 
     const savedUser = await this.userRepository.save(newUser);
-    return this.generateTokens(savedUser);
+    const tokens = await this.generateTokens(savedUser);
+
+    return {
+      ...tokens,
+      user: this.formatUser(savedUser),
+    };
   }
 
   async login(dto: LoginDto) {
@@ -64,19 +82,28 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password credentials');
     }
 
-    return this.generateTokens(user);
+    const tokens = await this.generateTokens(user);
+
+    return {
+      ...tokens,
+      user: this.formatUser(user),
+    };
   }
 
   async refresh(token: string) {
     try {
       const payload = this.jwtService.verify(token, { secret: process.env.JWT_REFRESH_SECRET });
       const user = await this.userRepository.findOne({ where: { id: payload.sub } });
-      
+
       if (!user) {
         throw new UnauthorizedException('User no longer exists');
       }
-      
-      return this.generateTokens(user);
+
+      const tokens = await this.generateTokens(user);
+      return {
+        ...tokens,
+        user: this.formatUser(user),
+      };
     } catch (e) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
@@ -87,8 +114,6 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    // Remove the sensitive hash before returning data to the client
-    delete user.passwordHash;
-    return user;
+    return this.formatUser(user);
   }
 }

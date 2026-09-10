@@ -1,14 +1,16 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as amqp from 'amqplib';
+import amqp, { Connection, Channel } from 'amqplib';
 import { Order } from '../modules/orders/order.entity';
+import { OrderStatus } from '../modules/orders/order.entity'; 
 
 @Injectable()
 export class PaymentConsumerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PaymentConsumerService.name);
-  private connection: amqp.Connection;
-  private channel: amqp.Channel;
+
+  private connection: Connection |any;
+  private channel: Channel |any;
 
   constructor(
     @InjectRepository(Order)
@@ -47,7 +49,7 @@ export class PaymentConsumerService implements OnModuleInit, OnModuleDestroy {
 
           if (orderId) {
             // Update status bypassing the standard state machine checks
-            await this.orderRepository.update(orderId, { status: 'CONFIRMED' });
+            await this.orderRepository.update(orderId, { status: OrderStatus.CONFIRMED });
             this.logger.log(`Order ${orderId} updated to CONFIRMED via Payment Consumer.`);
           }
 

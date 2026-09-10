@@ -1,22 +1,24 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import databaseConfig from './config/database.config';
 import { envValidationSchema } from './config/env.validation';
 import { AuthModule } from './modules/auth/auth.module';
 import { ListingsModule } from './modules/listings/listings.module';
 import { MessagingModule } from './messaging/messaging.module';
-import { OrdersModule } from './modules/orders/orders.module'; // 👈 1. Import OrdersModule
-import { ReviewsModule } from './modules/reviews/reviews.module'; // 👈 1. Import ReviewsModule
+import { OrdersModule } from './modules/orders/orders.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 import { HealthModule } from './modules/health/health.module';
-import { UsersModule } from './modules/users/users.module'; // 👈 1. Import UsersModule
+import { UsersModule } from './modules/users/users.module';
+import { User } from './modules/users/user.entity';
+import { Listing } from './modules/listings/listing.entity';
+import { Order } from './modules/orders/order.entity';
+import { OrderItem } from './modules/orders/order-item.entity';
+import { Review } from './modules/reviews/review.entity';
 
 @Module({
   imports: [
-    // 1. Core Config Setup
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig],
       validationSchema: envValidationSchema,
       validationOptions: {
         allowUnknown: true,
@@ -24,21 +26,25 @@ import { UsersModule } from './modules/users/users.module'; // 👈 1. Import Us
       },
     }),
 
-    // 2. Database Connection
-    TypeOrmModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
-        configService.get('database'),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.DB_HOST || 'postgres',
+      port: parseInt(process.env.DB_PORT, 10) || 5432,
+      username: process.env.DB_USERNAME || 'hgm_user',
+      password: process.env.DB_PASSWORD || 'hgm_password',
+      database: process.env.DB_NAME || 'hgm_system_a',
+      entities: [User, Listing, Order, OrderItem, Review],
+      synchronize: true,
+      logging: true,
     }),
 
-    // 3. Feature Modules
     AuthModule,
     ListingsModule,
-    OrdersModule, // 👈 2. Add OrdersModule here!
+    OrdersModule,
     ReviewsModule,
     MessagingModule,
     HealthModule,
-    UsersModule, // 👈 ADD THIS HERE!
+    UsersModule,
   ],
   controllers: [],
   providers: [],
