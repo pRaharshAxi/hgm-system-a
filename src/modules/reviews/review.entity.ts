@@ -15,34 +15,34 @@ export class Review {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ name: 'order_id', type: 'uuid' })
   @Index({ unique: true })
   orderId: string;
 
   @ManyToOne(() => Order, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'orderId' })
+  @JoinColumn({ name: 'order_id' })
   order: Order;
 
-  @Column({ type: 'uuid' })
+  @Column({ name: 'buyer_id', type: 'uuid' })
   buyerId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'buyerId' })
+  @JoinColumn({ name: 'buyer_id' })
   buyer: User;
 
-  @Column({ type: 'uuid' })
+  @Column({ name: 'seller_id', type: 'uuid' })
   sellerId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'sellerId' })
+  @JoinColumn({ name: 'seller_id' })
   seller: User;
 
   @Column({ type: 'int' })
   rating: number;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text' })
   comment: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

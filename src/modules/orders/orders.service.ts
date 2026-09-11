@@ -11,6 +11,7 @@ import { Listing } from '../listings/listing.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { AdminOrderQueryDto } from './dto/admin-order-query.dto';
 import { EventPublisherService } from '../../messaging/event-publisher.service';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class OrdersService {
@@ -103,16 +104,21 @@ export class OrdersService {
 
       savedOrder.items = await queryRunner.manager.save(OrderItem, items);
 
+      // Fetch buyer details for the event notification
+      const buyer = await queryRunner.manager.findOne(User, { where: { id: buyerId } });
+
       // 5. Commit Transaction
       await queryRunner.commitTransaction();
 
-      // Publish RabbitMQ Event
+      // Publish RabbitMQ Event with listingTitle and buyerName included
       await this.eventPublisher.publishOrderPlaced({
         orderId: savedOrder.id,
         buyerId: savedOrder.buyerId,
         supplierId: savedOrder.supplierId,
         totalAmount: savedOrder.totalAmount,
         items: savedOrder.items,
+        listingTitle: savedOrder.items[0]?.listingTitle ?? 'your listing',
+        buyerName: buyer?.name ?? 'A buyer',
       });
 
       return savedOrder;
@@ -218,6 +224,7 @@ export class OrdersService {
       orderId: updatedOrder.id,
       status: updatedOrder.status,
       actorId,
+      buyerId: updatedOrder.buyerId,
     });
 
     return updatedOrder;
@@ -270,6 +277,7 @@ export class OrdersService {
       orderId: updatedOrder.id,
       status: updatedOrder.status,
       actorId: 'ADMIN_OVERRIDE',
+      buyerId: updatedOrder.buyerId,
     });
 
     return updatedOrder;
