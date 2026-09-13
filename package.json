@@ -23,6 +23,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.540.0",
     "@aws-sdk/s3-request-presigner": "^3.540.0",
+    "@camunda8/sdk": "^8.8.13",
     "@nestjs/cache-manager": "^2.2.1",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.2.0",

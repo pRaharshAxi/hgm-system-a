@@ -1,10 +1,15 @@
 import { Module, Global } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { EventPublisherService } from './event-publisher.service';
+import { PaymentConsumerService } from './payment-consumer.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Order } from '../modules/orders/order.entity';
 
 @Global() // Makes the publisher accessible across the app without re-importing
 @Module({
   imports: [
+    TypeOrmModule.forFeature([Order]),
+
     ClientsModule.register([
       {
         name: 'RABBITMQ_CLIENT',
@@ -22,7 +27,7 @@ import { EventPublisherService } from './event-publisher.service';
       },
     ]),
   ],
-  providers: [EventPublisherService],
+  providers: [EventPublisherService, PaymentConsumerService],
   exports: [EventPublisherService],
 })
 export class MessagingModule {}

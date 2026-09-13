@@ -12,12 +12,15 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { AdminOrderQueryDto } from './dto/admin-order-query.dto';
 import { EventPublisherService } from '../../messaging/event-publisher.service';
 import { User } from '../users/user.entity';
+import { CamundaService } from '../../camunda/camunda.service';
+
 
 @Injectable()
 export class OrdersService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly eventPublisher: EventPublisherService,
+    private readonly camundaService: CamundaService,
   ) {}
 
   async placeOrder(dto: CreateOrderDto, buyerId: string): Promise<Order> {
@@ -109,6 +112,12 @@ export class OrdersService {
 
       // 5. Commit Transaction
       await queryRunner.commitTransaction();
+
+      await this.camundaService.startOrderProcess(
+        savedOrder.id,
+        savedOrder.buyerId,
+        savedOrder.supplierId,
+      );
 
       // Publish RabbitMQ Event with listingTitle and buyerName included
       await this.eventPublisher.publishOrderPlaced({

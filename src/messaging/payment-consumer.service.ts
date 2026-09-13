@@ -1,7 +1,8 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import amqp, { Connection, Channel } from 'amqplib';
+import * as amqp from 'amqplib';
+import { Connection, Channel } from 'amqplib';
 import { Order } from '../modules/orders/order.entity';
 import { OrderStatus } from '../modules/orders/order.entity'; 
 
@@ -23,7 +24,7 @@ export class PaymentConsumerService implements OnModuleInit, OnModuleDestroy {
 
   private async initConsumer() {
     try {
-      this.connection = await amqp.connect(process.env.RABBITMQ_URI || 'amqp://localhost');
+      this.connection = await amqp.connect(process.env.RABBITMQ_URL || 'amqp://localhost');
       this.channel = await this.connection.createChannel();
 
       const exchangeName = 'hgm';

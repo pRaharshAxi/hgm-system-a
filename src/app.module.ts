@@ -34,7 +34,7 @@ import { Review } from './modules/reviews/review.entity';
       password: process.env.DB_PASSWORD || 'hgm_password',
       database: process.env.DB_NAME || 'hgm_system_a',
       entities: [User, Listing, Order, OrderItem, Review],
-      synchronize: true,
+      synchronize: false,
       logging: true,
     }),
 
