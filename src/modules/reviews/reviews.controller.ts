@@ -1,4 +1,15 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  DefaultValuePipe,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { JwtAuthGuard } from '../auth/auth.guard'; // or '../../modules/auth/guards/jwt-auth.guard'
@@ -20,9 +31,9 @@ export class ReviewsController {
   @Get(':sellerId')
   async findBySeller(
     @Param('sellerId') sellerId: string,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
-    return this.reviewsService.findBySellerId(sellerId, Number(page), Number(limit));
+    return this.reviewsService.findBySellerId(sellerId, page, limit);
   }
 }
